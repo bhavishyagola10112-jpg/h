@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Background Remover</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at top left, #0f172a, #1e1e2f);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  .container {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 40px 25px;
+    width: 95%;
+    max-width: 800px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .upload-area {
+    border: 2px dashed rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: rgba(255,255,255,0.8);
+    font-size: 16px;
+  }
+
+  .upload-area:hover {
+    border-color: #00f5d4;
+    background: rgba(255,255,255,0.05);
+    box-shadow: 0 0 15px rgba(0, 245, 212, 0.3);
+  }
+
+  button {
+    background: linear-gradient(90deg, #9b5de5, #00f5d4);
+    border: none;
+    color: #fff;
+    padding: 12px 22px;
+    margin: 10px 8px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(0,245,212,0.5);
+  }
+
+  .preview {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    gap: 20px;
+  }
+
+  .preview img {
+    max-width: 45%;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: none;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.4);
+  }
+
+  .buttons {
+    margin-top: 20px;
+  }
+
+  footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    text-align: center;
+    padding: 10px 0;
+    overflow: hidden;
+    z-index: 10;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  footer span {
+    display: inline-block;
+    white-space: nowrap;
+    animation: slideText 25s linear infinite;
+    background: linear-gradient(90deg, #00f5d4, #9b5de5, #00f5d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px rgba(155,93,229,0.6);
+  }
+
+  @keyframes slideText {
+    0% { transform: translateX(100%); }
+    50% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="upload-area" id="uploadArea">
+      <p>📤 Drag & Drop Image Here or Click to Upload</p>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+
+    <button id="removeBtn">Remove Background</button>
+
+    <div class="buttons">
+      <button id="downloadBtn">Download</button>
+      <button id="copyBtn">Copy Link</button>
+      <button id="shareBtn">Share</button>
+    </div>
+
+    <div class="preview">
+      <img id="originalImage" alt="Original Image">
+      <img id="outputImage" alt="Background Removed">
+    </div>
+  </div>
+
+  <footer>
+    <span>💬 If there is any fault in any tool please let us know 💬</span>
+  </footer>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const uploadArea = document.getElementById("uploadArea");
+const outputImage = document.getElementById("outputImage");
+const originalImage = document.getElementById("originalImage");
+const removeBtn = document.getElementById("removeBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const copyBtn = document.getElementById("copyBtn");
+const shareBtn = document.getElementById("shareBtn");
+
+let outputUrl = "";
+let selectedFile = null;
+
+// 💡 1️⃣ Insert your API key here 👇
+const API_KEY = "tbyVJ8TUMdsnMN5cgMUegQmV"; // Replace with your remove.bg key
+
+// 🖼️ Drag and Drop upload logic
+uploadArea.addEventListener("click", () => fileInput.click());
+uploadArea.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = "#00f5d4";
+});
+uploadArea.addEventListener("dragleave", () => {
+  uploadArea.style.borderColor = "rgba(255,255,255,0.2)";
+});
+uploadArea.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = "rgba(255,255,255,0.2)";
+  selectedFile = e.dataTransfer.files[0];
+  showOriginal(selectedFile);
+});
+fileInput.addEventListener("change", (e) => {
+  selectedFile = e.target.files[0];
+  showOriginal(selectedFile);
+});
+
+function showOriginal(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    originalImage.src = reader.result;
+    originalImage.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+// 🎯 Remove background
+removeBtn.addEventListener("click", async () => {
+  if (!selectedFile) return alert("Please select or drop an image!");
+  if (API_KEY === "YOUR_API_KEY_HERE") {
+    return alert("Please add your remove.bg API key inside the code.");
+  }
+
+  const formData = new FormData();
+  formData.append("image_file", selectedFile);
+  formData.append("size", "auto");
+
+  removeBtn.textContent = "Processing...";
+  removeBtn.disabled = true;
+
+  try {
+    const res = await fetch("https://api.remove.bg/v1.0/removebg", {
+      method: "POST",
+      headers: { "X-Api-Key": API_KEY },
+      body: formData
+    });
+    if (!res.ok) throw new Error("Background removal failed");
+    const blob = await res.blob();
+    outputUrl = URL.createObjectURL(blob);
+    outputImage.src = outputUrl;
+    outputImage.style.display = "block";
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    removeBtn.textContent = "Remove Background";
+    removeBtn.disabled = false;
+  }
+});
+
+// 💾 Download
+downloadBtn.addEventListener("click", () => {
+  if (!outputUrl) return alert("No output yet!");
+  const a = document.createElement("a");
+  a.href = outputUrl;
+  a.download = "no-background.png";
+  a.click();
+});
+
+// 📋 Copy
+copyBtn.addEventListener("click", () => {
+  if (!outputUrl) return alert("No image to copy link!");
+  navigator.clipboard.writeText(outputUrl)
+    .then(() => alert("Image link copied!"))
+    .catch(() => alert("Failed to copy."));
+});
+
+// 📤 Share
+shareBtn.addEventListener("click", async () => {
+  if (!outputUrl) return alert("No image to share!");
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Background Removed Image", url: outputUrl });
+    } catch {}
+  } else {
+    alert("Sharing not supported on this device.");
+  }
+});
+</script>
+</body>
+</html>
